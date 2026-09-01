@@ -82,3 +82,26 @@ class VerificationResult(BaseModel):
     on_chain_hash: str
     transaction_hash: str
     reason: str
+
+
+class CandidateEvaluation(BaseModel):
+    """Face-verification outcome for a single web search candidate."""
+
+    model_config = ConfigDict(frozen=True)
+
+    candidate: SearchCandidate
+    similarity_score: float | None = Field(default=None, ge=-1, le=1)
+    matched: bool = False
+    error: str | None = None
+
+
+class PipelineResult(BaseModel):
+    """Complete, serializable result of one end-to-end verification run."""
+
+    model_config = ConfigDict(frozen=True)
+
+    query_face: FaceScan
+    evaluations: tuple[CandidateEvaluation, ...]
+    evidence: MatchEvidence
+    receipt: ChainReceipt
+    verification: VerificationResult
