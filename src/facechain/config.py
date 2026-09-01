@@ -11,10 +11,13 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    serpapi_api_key: SecretStr | None = None
     google_vision_api_key: SecretStr | None = None
     face_match_threshold: float = Field(default=0.45, ge=-1, le=1)
     max_search_results: int = Field(default=10, ge=1, le=50)
     http_timeout_seconds: float = Field(default=15, gt=0, le=60)
+    search_country: str = Field(default="in", min_length=2, max_length=2)
+    search_language: str = Field(default="en", min_length=2, max_length=5)
 
     evm_rpc_url: str | None = None
     evm_private_key: SecretStr | None = None

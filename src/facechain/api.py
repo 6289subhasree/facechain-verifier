@@ -15,7 +15,7 @@ from facechain.config import Settings
 from facechain.face import FaceProcessingError
 from facechain.models import PipelineResult
 from facechain.pipeline import FaceChainPipeline, NoWebMatchError
-from facechain.search import GoogleVisionWebSearch, SearchProviderError
+from facechain.search import GoogleVisionWebSearch, SearchProviderError, SerpApiGoogleLensSearch
 
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -24,14 +24,23 @@ PipelineFactory = Callable[[], FaceChainPipeline]
 
 def _default_pipeline_factory(settings: Settings) -> PipelineFactory:
     def factory() -> FaceChainPipeline:
-        if settings.google_vision_api_key is None:
+        if settings.serpapi_api_key is None and settings.google_vision_api_key is None:
             raise SearchProviderError(
-                "Live discovery is not configured. Add GOOGLE_VISION_API_KEY to .env."
+                "Live discovery is not configured. Add SERPAPI_API_KEY to .env."
             )
         client = httpx.Client(timeout=settings.http_timeout_seconds, follow_redirects=True)
-        search = GoogleVisionWebSearch(
-            settings.google_vision_api_key.get_secret_value(), client=client
-        )
+        if settings.serpapi_api_key is not None:
+            search = SerpApiGoogleLensSearch(
+                settings.serpapi_api_key.get_secret_value(),
+                client=client,
+                country=settings.search_country,
+                language=settings.search_language,
+            )
+        else:
+            assert settings.google_vision_api_key is not None
+            search = GoogleVisionWebSearch(
+                settings.google_vision_api_key.get_secret_value(), client=client
+            )
         return FaceChainPipeline.with_insightface(
             search_provider=search,
             registry=settings.build_registry(),
@@ -66,11 +75,17 @@ def create_app(
     @app.get("/api/health")
     def health() -> dict[str, object]:
         public_chain = bool(runtime.evm_rpc_url and runtime.evm_private_key)
+        configured = bool(runtime.serpapi_api_key or runtime.google_vision_api_key)
+        provider = "Not configured"
+        if runtime.serpapi_api_key:
+            provider = "SerpAPI Google Lens"
+        elif runtime.google_vision_api_key:
+            provider = "Google Vision Web Detection"
         return {
-            "status": "ready" if runtime.google_vision_api_key else "configuration-required",
+            "status": "ready" if configured else "configuration-required",
             "discovery": {
-                "provider": "Google Vision Web Detection",
-                "configured": bool(runtime.google_vision_api_key),
+                "provider": provider,
+                "configured": configured,
             },
             "face_model": "InsightFace buffalo_l (ArcFace)",
             "chain": {

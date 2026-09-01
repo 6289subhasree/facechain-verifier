@@ -2,7 +2,7 @@
 
 **Face scan → live public-web discovery → biometric re-verification → blockchain proof.**
 
-FaceChain is a consent-first OSINT verification pipeline built for the HH Goa 2026 shortlisting task. It accepts a face scan, discovers pages containing matching imagery through Google Vision Web Detection, independently compares the faces with InsightFace/ArcFace, and anchors a canonical evidence fingerprint in an EVM transaction.
+FaceChain is a consent-first OSINT verification pipeline built for the HH Goa 2026 shortlisting task. It accepts a face scan, discovers pages containing matching imagery through SerpAPI Google Lens, independently compares the faces with InsightFace/ArcFace, and anchors a canonical evidence fingerprint in an EVM transaction.
 
 The system never treats reverse-image search alone as identity proof. Every discovered candidate is downloaded, re-encoded, scored, and thresholded before its evidence can reach the blockchain.
 
@@ -21,7 +21,7 @@ flowchart LR
 | Stage | Implementation | Output |
 |---|---|---|
 | Face identification | InsightFace `buffalo_l` with normalized ArcFace embeddings | Bounding box, detector confidence, biometric vector |
-| Web/social discovery | Google Vision `WEB_DETECTION` on the uploaded bytes | Real public page and matching-image URLs |
+| Web/social discovery | SerpAPI Google Lens image upload and visual matches | Real public page and matching-image URLs |
 | Match verification | Cosine similarity over independently generated embeddings | Ranked candidates and thresholded best match |
 | Evidence construction | Deterministic sorted JSON + SHA-256 | Reproducible `0x…` fingerprint |
 | Blockchain anchoring | FaceChain v1 marker + 32-byte hash in EVM calldata | Transaction hash, block, chain ID, sender |
@@ -51,7 +51,7 @@ python -m pip install -e ".[dev,face]"
 cp .env.example .env  # Windows: copy .env.example .env
 ```
 
-Set `GOOGLE_VISION_API_KEY` in `.env`, then run:
+Set `SERPAPI_API_KEY` in `.env`, then run:
 
 ```bash
 facechain-web
@@ -63,12 +63,11 @@ Open [http://localhost:8000](http://localhost:8000). Interactive API documentati
 
 ## Live discovery setup
 
-1. Create or select a Google Cloud project.
-2. Enable the **Cloud Vision API**.
-3. Create an API key restricted to Cloud Vision.
-4. Add it to `.env` as `GOOGLE_VISION_API_KEY`.
+1. Create a free account at [SerpAPI](https://serpapi.com/).
+2. Copy the private API key from the dashboard.
+3. Add it to `.env` as `SERPAPI_API_KEY`.
 
-The uploaded bytes go directly to Web Detection; the scan never needs a temporary public URL.
+FaceChain compresses the scan below SerpAPI's 500 KB upload limit, obtains a temporary `image_id`, and sends that ID to Google Lens. The scan does not need to be hosted at a public URL. `GOOGLE_VISION_API_KEY` remains available as an optional fallback.
 
 ## Blockchain modes
 
@@ -132,7 +131,7 @@ src/facechain/
 ├── evidence.py     # canonical hashing
 ├── face.py         # InsightFace/ArcFace
 ├── pipeline.py     # orchestration
-├── search.py       # web discovery and safe retrieval
+├── search.py       # SerpAPI/Google discovery and safe retrieval
 └── web/            # responsive interface
 ```
 

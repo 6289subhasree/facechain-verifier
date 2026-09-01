@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import ipaddress
 import socket
 from collections.abc import Iterable
@@ -8,11 +9,15 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 import httpx
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from facechain.models import SearchCandidate
 
 GOOGLE_VISION_ENDPOINT = "https://vision.googleapis.com/v1/images:annotate"
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
+SERPAPI_IMAGE_ENDPOINT = "https://serpapi.com/image"
+SERPAPI_SEARCH_ENDPOINT = "https://serpapi.com/search.json"
+SERPAPI_UPLOAD_LIMIT = 500_000
 
 
 class SearchProviderError(RuntimeError):
@@ -23,6 +28,124 @@ class ReverseImageSearch(Protocol):
     name: str
 
     def search(self, image_bytes: bytes, *, max_results: int = 10) -> list[SearchCandidate]: ...
+
+
+def prepare_serpapi_image(image_bytes: bytes) -> bytes:
+    """Normalize and compress a scan below SerpAPI's 500 KB upload limit."""
+
+    if not image_bytes:
+        raise SearchProviderError("cannot upload an empty image")
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as opened:
+            image = ImageOps.exif_transpose(opened)
+            image.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
+            if image.mode in {"RGBA", "LA"}:
+                rgba = image.convert("RGBA")
+                background = Image.new("RGB", rgba.size, "white")
+                background.paste(rgba, mask=rgba.getchannel("A"))
+                image = background
+            else:
+                image = image.convert("RGB")
+
+            for quality in (88, 78, 68, 58, 48, 38):
+                output = io.BytesIO()
+                image.save(output, format="JPEG", quality=quality, optimize=True)
+                encoded = output.getvalue()
+                if len(encoded) <= SERPAPI_UPLOAD_LIMIT:
+                    return encoded
+    except (OSError, UnidentifiedImageError) as exc:
+        raise SearchProviderError("scan could not be prepared for Google Lens") from exc
+    raise SearchProviderError("scan could not be compressed below SerpAPI's 500 KB limit")
+
+
+class SerpApiGoogleLensSearch:
+    """Upload a scan and return live Google Lens visual matches through SerpAPI."""
+
+    name = "serpapi-google-lens"
+
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        client: httpx.Client | None = None,
+        country: str = "in",
+        language: str = "en",
+        image_endpoint: str = SERPAPI_IMAGE_ENDPOINT,
+        search_endpoint: str = SERPAPI_SEARCH_ENDPOINT,
+    ) -> None:
+        if not api_key.strip():
+            raise ValueError("SERPAPI_API_KEY is required for Google Lens discovery")
+        self.api_key = api_key
+        self.client = client or httpx.Client(timeout=30, follow_redirects=True)
+        self.country = country
+        self.language = language
+        self.image_endpoint = image_endpoint
+        self.search_endpoint = search_endpoint
+
+    def _upload(self, image_bytes: bytes) -> str:
+        upload_bytes = prepare_serpapi_image(image_bytes)
+        try:
+            response = self.client.post(
+                self.image_endpoint,
+                data={"api_key": self.api_key},
+                files={"image": ("facechain-scan.jpg", upload_bytes, "image/jpeg")},
+            )
+            response.raise_for_status()
+            body = response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise SearchProviderError(f"SerpAPI image upload failed: {exc}") from exc
+        if body.get("error"):
+            raise SearchProviderError(f"SerpAPI image upload failed: {body['error']}")
+        image_id = body.get("image_id")
+        if not image_id:
+            raise SearchProviderError("SerpAPI image upload returned no image_id")
+        return str(image_id)
+
+    def search(self, image_bytes: bytes, *, max_results: int = 10) -> list[SearchCandidate]:
+        if not 1 <= max_results <= 50:
+            raise ValueError("max_results must be between 1 and 50")
+        image_id = self._upload(image_bytes)
+        try:
+            response = self.client.get(
+                self.search_endpoint,
+                params={
+                    "engine": "google_lens",
+                    "image_id": image_id,
+                    "api_key": self.api_key,
+                    "country": self.country,
+                    "hl": self.language,
+                },
+            )
+            response.raise_for_status()
+            body = response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise SearchProviderError(f"Google Lens search failed: {exc}") from exc
+        if body.get("error"):
+            raise SearchProviderError(f"Google Lens search failed: {body['error']}")
+
+        candidates: list[SearchCandidate] = []
+        seen: set[tuple[str, str]] = set()
+        for item in body.get("visual_matches") or []:
+            source_url = item.get("link")
+            image_url = item.get("image") or item.get("thumbnail")
+            if not source_url or not image_url:
+                continue
+            key = (str(source_url), str(image_url))
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(
+                SearchCandidate(
+                    source_url=source_url,
+                    image_url=image_url,
+                    title=item.get("title") or item.get("source") or "Google Lens visual match",
+                    provider=self.name,
+                    rank=int(item.get("position") or len(candidates) + 1),
+                )
+            )
+            if len(candidates) >= max_results:
+                break
+        return candidates
 
 
 def _image_from_page(page: dict[str, Any]) -> str | None:

@@ -83,6 +83,16 @@ def test_index_and_health_are_available() -> None:
     assert health["chain"]["mode"] == "local"
 
 
+def test_health_prefers_serpapi_when_configured() -> None:
+    app = create_app(
+        settings=Settings(serpapi_api_key="test-key", _env_file=None),
+        pipeline_factory=lambda: FakePipeline(),
+    )
+    health = TestClient(app).get("/api/health").json()
+    assert health["status"] == "ready"
+    assert health["discovery"]["provider"] == "SerpAPI Google Lens"
+
+
 def test_verification_requires_consent() -> None:
     response = client().post(
         "/api/verify",
