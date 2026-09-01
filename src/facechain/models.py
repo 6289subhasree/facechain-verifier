@@ -23,7 +23,7 @@ class FaceScan(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    embedding: tuple[float, ...] = Field(min_length=2)
+    embedding: tuple[float, ...] = Field(min_length=2, exclude=True)
     bounding_box: tuple[int, int, int, int]
     detection_score: float = Field(ge=0, le=1)
     model: str = Field(min_length=1, max_length=100)
@@ -72,6 +72,7 @@ class ChainReceipt(BaseModel):
     block_number: int
     sender: str
     evidence_hash: str
+    explorer_url: HttpUrl | None = None
 
 
 class VerificationResult(BaseModel):
