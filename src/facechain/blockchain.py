@@ -24,7 +24,7 @@ class EthereumEvidenceRegistry:
     chain_name: str = "EthereumTester (local EVM)"
 
     @classmethod
-    def local(cls) -> "EthereumEvidenceRegistry":
+    def local(cls) -> EthereumEvidenceRegistry:
         return cls(web3=Web3(EthereumTesterProvider()))
 
     @property
@@ -82,4 +82,3 @@ class EthereumEvidenceRegistry:
             if matches
             else "Evidence has changed since it was anchored",
         )
-

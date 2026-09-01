@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from facechain.evidence import canonical_evidence_bytes, evidence_hash
 from facechain.models import MatchEvidence
@@ -14,7 +14,7 @@ def sample_evidence(**updates: object) -> MatchEvidence:
         "face_model": "test-model",
         "similarity_score": 0.91,
         "matched": True,
-        "discovered_at": datetime(2026, 9, 1, 12, 0, tzinfo=timezone.utc),
+        "discovered_at": datetime(2026, 9, 1, 12, 0, tzinfo=UTC),
     }
     values.update(updates)
     return MatchEvidence(**values)
@@ -30,4 +30,3 @@ def test_material_change_changes_hash() -> None:
     original = sample_evidence()
     changed = sample_evidence(title="Altered public post")
     assert evidence_hash(original) != evidence_hash(changed)
-

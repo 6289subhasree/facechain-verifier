@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
@@ -18,6 +18,24 @@ class SearchCandidate(BaseModel):
     rank: int = Field(ge=1)
 
 
+class FaceScan(BaseModel):
+    """A normalized face embedding and the detector metadata that produced it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    embedding: tuple[float, ...] = Field(min_length=2)
+    bounding_box: tuple[int, int, int, int]
+    detection_score: float = Field(ge=0, le=1)
+    model: str = Field(min_length=1, max_length=100)
+
+    @field_validator("embedding")
+    @classmethod
+    def require_nonzero_embedding(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if not any(value):
+            raise ValueError("face embedding cannot be the zero vector")
+        return value
+
+
 class MatchEvidence(BaseModel):
     """Canonical evidence committed to the blockchain."""
 
@@ -32,7 +50,7 @@ class MatchEvidence(BaseModel):
     face_model: str = Field(min_length=1, max_length=100)
     similarity_score: float = Field(ge=-1, le=1)
     matched: bool
-    discovered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    discovered_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("discovered_at")
@@ -40,7 +58,7 @@ class MatchEvidence(BaseModel):
     def require_timezone(cls, value: datetime) -> datetime:
         if value.tzinfo is None:
             raise ValueError("discovered_at must be timezone-aware")
-        return value.astimezone(timezone.utc)
+        return value.astimezone(UTC)
 
 
 class ChainReceipt(BaseModel):
@@ -64,4 +82,3 @@ class VerificationResult(BaseModel):
     on_chain_hash: str
     transaction_hash: str
     reason: str
-
