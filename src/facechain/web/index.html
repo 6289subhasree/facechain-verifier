@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Find a face across the public web and anchor verified evidence on-chain.">
+  <title>FaceChain — Traceable identity proof</title>
+  <link rel="stylesheet" href="/static/styles.css"><script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="nav shell"><a class="brand" href="/"><i></i>FACECHAIN</a><span><b></b>EVIDENCE PROTOCOL / V1</span></header>
+  <main>
+    <section class="hero shell">
+      <div><p class="kicker">OPEN-SOURCE IDENTITY INTELLIGENCE</p><h1>One face.<br><em>One traceable proof.</em></h1><p class="lede">Detect a face, locate matching public content, and seal the evidence in an independently verifiable blockchain transaction.</p></div>
+      <aside><small>FC</small><strong>01</strong><small>GOA / 2026</small></aside>
+    </section>
+    <section class="stages shell">
+      <article><b>01</b><div><strong>Detect</strong><span>ArcFace biometric embedding</span></div></article>
+      <article><b>02</b><div><strong>Discover</strong><span>Live public-web matching</span></div></article>
+      <article><b>03</b><div><strong>Prove</strong><span>Immutable EVM fingerprint</span></div></article>
+    </section>
+    <section class="workspace shell">
+      <div class="panel input-panel">
+        <header><div><span class="kicker">INPUT / FACE SCAN</span><h2>Start an evidence trace</h2></div><small>LOCAL PREVIEW</small></header>
+        <label class="dropzone" id="dropzone" for="image-input">
+          <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp">
+          <img id="preview" alt="Selected face scan" hidden>
+          <div id="drop-copy"><i class="scan-icon"><b></b></i><strong>Drop a clear face scan</strong><span>or click to browse · JPG, PNG, WEBP · max 12 MB</span></div>
+          <button id="replace-button" type="button" hidden>Replace image</button>
+        </label>
+        <label class="consent"><input id="consent" type="checkbox"><i></i><span>I confirm I have permission to process this image and search public sources.</span></label>
+        <button id="run-button" class="run" type="button" disabled><span>Run verification</span><b>↗</b></button>
+        <p id="form-error" class="error" role="alert"></p>
+      </div>
+      <aside class="panel process-panel">
+        <span class="kicker">LIVE PIPELINE</span>
+        <div id="idle-state" class="idle"><div class="radar"><i></i><i></i><i></i></div><h3>Awaiting scan</h3><p>The evidence chain will appear here as each stage completes.</p></div>
+        <ol id="progress" class="progress" hidden>
+          <li><b>01</b><div><strong>Encoding face</strong><span>Detecting landmarks and biometric vector</span></div><i></i></li>
+          <li><b>02</b><div><strong>Searching the public web</strong><span>Finding pages with matching imagery</span></div><i></i></li>
+          <li><b>03</b><div><strong>Comparing candidates</strong><span>Re-verifying every discovered face</span></div><i></i></li>
+          <li><b>04</b><div><strong>Anchoring evidence</strong><span>Writing the canonical SHA-256 fingerprint</span></div><i></i></li>
+        </ol>
+      </aside>
+    </section>
+    <section id="results" class="results shell" hidden aria-live="polite">
+      <header><div><span class="kicker">VERIFICATION REPORT</span><h2>Match found and anchored.</h2></div><b>✓ CRYPTOGRAPHICALLY VERIFIED</b></header>
+      <div class="result-grid">
+        <article><span class="label">BEST PUBLIC MATCH</span><div class="score"><strong id="score">—</strong><small>COSINE<br>SIMILARITY</small></div><h3 id="match-title">—</h3><a id="source-link" href="#" target="_blank" rel="noopener">Open original source ↗</a><dl><div><dt>Search rank</dt><dd id="search-rank">—</dd></div><div><dt>Candidates checked</dt><dd id="candidate-count">—</dd></div></dl></article>
+        <article><span class="label">BLOCKCHAIN RECEIPT</span><dl class="proof"><div><dt>Network</dt><dd id="chain-name">—</dd></div><div><dt>Block</dt><dd id="block-number">—</dd></div><div><dt>Transaction</dt><dd id="transaction-hash">—</dd></div><div><dt>Evidence SHA-256</dt><dd id="evidence-hash">—</dd></div></dl><a id="explorer-link" href="#" target="_blank" rel="noopener" hidden>Inspect on block explorer ↗</a></article>
+      </div>
+      <button id="reset-button" class="reset" type="button">Verify another scan</button>
+    </section>
+  </main>
+  <footer class="shell"><span>BUILT FOR HH GOA 2026</span><span>CONSENT-FIRST · PUBLIC SOURCES ONLY · REPRODUCIBLE PROOFS</span></footer>
+</body>
+</html>
