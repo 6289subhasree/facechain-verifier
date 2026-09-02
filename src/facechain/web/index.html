@@ -4,7 +4,9 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Find a face across the public web and anchor verified evidence on-chain.">
   <title>FaceChain — Traceable identity proof</title>
-  <link rel="stylesheet" href="/static/styles.css"><script src="/static/app.js" defer></script>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/proof.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
@@ -49,7 +51,22 @@
         <article><span class="label">BEST PUBLIC MATCH</span><div class="score"><strong id="score">—</strong><small>COSINE<br>SIMILARITY</small></div><h3 id="match-title">—</h3><a id="source-link" href="#" target="_blank" rel="noopener">Open original source ↗</a><dl><div><dt>Search rank</dt><dd id="search-rank">—</dd></div><div><dt>Candidates checked</dt><dd id="candidate-count">—</dd></div></dl></article>
         <article><span class="label">BLOCKCHAIN RECEIPT</span><dl class="proof"><div><dt>Network</dt><dd id="chain-name">—</dd></div><div><dt>Block</dt><dd id="block-number">—</dd></div><div><dt>Transaction</dt><dd id="transaction-hash">—</dd></div><div><dt>Evidence SHA-256</dt><dd id="evidence-hash">—</dd></div></dl><a id="explorer-link" href="#" target="_blank" rel="noopener" hidden>Inspect on block explorer ↗</a></article>
       </div>
-      <button id="reset-button" class="reset" type="button">Verify another scan</button>
+      <div class="result-actions">
+        <button id="download-button" class="download" type="button">Download proof JSON ↓</button>
+        <button id="reset-button" class="reset" type="button">Verify another scan</button>
+      </div>
+    </section>
+    <section class="proof-verifier shell" aria-labelledby="proof-verifier-title">
+      <div>
+        <span class="kicker">INDEPENDENT VERIFICATION</span>
+        <h2 id="proof-verifier-title">Check an existing proof.</h2>
+        <p>Upload a FaceChain proof bundle to recompute its fingerprint and compare it with the blockchain transaction.</p>
+      </div>
+      <div class="proof-upload">
+        <input id="proof-input" type="file" accept="application/json,.json">
+        <button id="verify-proof-button" type="button" disabled>Verify proof JSON</button>
+        <p id="proof-status" class="proof-status" role="status" aria-live="polite"></p>
+      </div>
     </section>
   </main>
   <footer class="shell"><span>BUILT FOR HH GOA 2026</span><span>CONSENT-FIRST · PUBLIC SOURCES ONLY · REPRODUCIBLE PROOFS</span></footer>

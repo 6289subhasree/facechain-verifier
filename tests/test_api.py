@@ -3,10 +3,12 @@ from datetime import UTC, datetime
 from fastapi.testclient import TestClient
 
 from facechain.api import create_app
+from facechain.blockchain import EthereumEvidenceRegistry
 from facechain.config import Settings
 from facechain.models import (
     CandidateEvaluation,
     ChainReceipt,
+    EvidenceBundle,
     FaceScan,
     MatchEvidence,
     PipelineResult,
@@ -60,6 +62,7 @@ def completed_result() -> PipelineResult:
         evidence=evidence,
         receipt=receipt,
         verification=verification,
+        proof_bundle=EvidenceBundle(evidence=evidence, receipt=receipt),
     )
 
 
@@ -113,3 +116,28 @@ def test_verification_response_excludes_biometric_embedding() -> None:
     body = response.json()
     assert body["verification"]["verified"] is True
     assert "embedding" not in body["query_face"]
+    assert body["proof_bundle"]["bundle_version"] == "facechain.proof.v1"
+
+
+def test_downloaded_bundle_can_be_verified_and_tampering_fails() -> None:
+    registry = EthereumEvidenceRegistry.local()
+    result = completed_result()
+    receipt = registry.anchor(result.evidence)
+    bundle = EvidenceBundle(evidence=result.evidence, receipt=receipt)
+    app = create_app(
+        settings=Settings(_env_file=None),
+        pipeline_factory=lambda: FakePipeline(),
+        registry=registry,
+    )
+    test_client = TestClient(app)
+
+    valid = test_client.post("/api/proofs/verify", json=bundle.model_dump(mode="json"))
+    assert valid.status_code == 200
+    assert valid.json()["verified"] is True
+
+    tampered = bundle.model_copy(
+        update={"evidence": bundle.evidence.model_copy(update={"title": "Tampered title"})}
+    )
+    invalid = test_client.post("/api/proofs/verify", json=tampered.model_dump(mode="json"))
+    assert invalid.status_code == 200
+    assert invalid.json()["verified"] is False

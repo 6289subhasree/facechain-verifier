@@ -9,6 +9,7 @@ from facechain.blockchain import EthereumEvidenceRegistry
 from facechain.face import FaceProcessingError, InsightFaceEncoder, is_face_match
 from facechain.models import (
     CandidateEvaluation,
+    EvidenceBundle,
     FaceScan,
     MatchEvidence,
     PipelineResult,
@@ -105,4 +106,5 @@ class FaceChainPipeline:
             evidence=evidence,
             receipt=receipt,
             verification=verification,
+            proof_bundle=EvidenceBundle(evidence=evidence, receipt=receipt),
         )

@@ -85,6 +85,16 @@ class VerificationResult(BaseModel):
     reason: str
 
 
+class EvidenceBundle(BaseModel):
+    """Portable evidence and chain receipt for independent re-verification."""
+
+    model_config = ConfigDict(frozen=True)
+
+    bundle_version: str = "facechain.proof.v1"
+    evidence: MatchEvidence
+    receipt: ChainReceipt
+
+
 class CandidateEvaluation(BaseModel):
     """Face-verification outcome for a single web search candidate."""
 
@@ -106,3 +116,4 @@ class PipelineResult(BaseModel):
     evidence: MatchEvidence
     receipt: ChainReceipt
     verification: VerificationResult
+    proof_bundle: EvidenceBundle

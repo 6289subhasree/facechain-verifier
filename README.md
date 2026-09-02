@@ -88,6 +88,14 @@ EVM_EXPLORER_URL=https://sepolia.etherscan.io/tx
 
 Use a dedicated testnet-only wallet with faucet ETH. Never commit `.env`. FaceChain signs locally, broadcasts, waits for the receipt, and returns an explorer link.
 
+## Portable proof bundles
+
+After a successful scan, select **Download proof JSON**. The bundle contains the canonical evidence and its chain receipt, but never the face image or biometric embedding.
+
+To verify a saved bundle, use the **Check an existing proof** panel in the web app. FaceChain recomputes the evidence fingerprint, fetches the recorded transaction, and reports whether the JSON is unchanged. The same operation is available as `POST /api/proofs/verify` for other clients.
+
+Local EthereumTester proofs can be checked only while that server process is running because its in-memory chain resets on restart. Proofs anchored to Sepolia or another persistent EVM remain independently verifiable after restarts.
+
 ## Reproducing a proof
 
 Evidence includes the public page and image URLs, provider/rank, face model, score, decision, timestamp, and run metadata. It is serialized as deterministic UTF-8 JSON:
@@ -97,7 +105,7 @@ fingerprint = "0x" + sha256(canonical_json_bytes).hexdigest()
 calldata = b"FACECHAIN:v1:" + bytes.fromhex(fingerprint[2:])
 ```
 
-Anyone with the evidence JSON and transaction hash can reconstruct the fingerprint and compare it with the final 32 calldata bytes. Changing one field produces a different hash.
+Anyone with the proof bundle can reconstruct the fingerprint and compare it with the final 32 calldata bytes. Changing one evidence field produces a different hash and a tamper-detection result.
 
 ```bash
 facechain proof-demo path/to/evidence.json

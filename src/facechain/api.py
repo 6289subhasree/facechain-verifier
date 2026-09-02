@@ -10,10 +10,12 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from web3.exceptions import TransactionNotFound
 
+from facechain.blockchain import EthereumEvidenceRegistry
 from facechain.config import Settings
 from facechain.face import FaceProcessingError
-from facechain.models import PipelineResult
+from facechain.models import EvidenceBundle, PipelineResult, VerificationResult
 from facechain.pipeline import FaceChainPipeline, NoWebMatchError
 from facechain.search import GoogleVisionWebSearch, SearchProviderError, SerpApiGoogleLensSearch
 
@@ -22,7 +24,9 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 PipelineFactory = Callable[[], FaceChainPipeline]
 
 
-def _default_pipeline_factory(settings: Settings) -> PipelineFactory:
+def _default_pipeline_factory(
+    settings: Settings, registry: EthereumEvidenceRegistry
+) -> PipelineFactory:
     def factory() -> FaceChainPipeline:
         if settings.serpapi_api_key is None and settings.google_vision_api_key is None:
             raise SearchProviderError(
@@ -43,7 +47,7 @@ def _default_pipeline_factory(settings: Settings) -> PipelineFactory:
             )
         return FaceChainPipeline.with_insightface(
             search_provider=search,
-            registry=settings.build_registry(),
+            registry=registry,
             threshold=settings.face_match_threshold,
             max_results=settings.max_search_results,
             http_client=client,
@@ -56,9 +60,11 @@ def create_app(
     *,
     settings: Settings | None = None,
     pipeline_factory: PipelineFactory | None = None,
+    registry: EthereumEvidenceRegistry | None = None,
 ) -> FastAPI:
     runtime = settings or Settings()
-    factory = pipeline_factory or _default_pipeline_factory(runtime)
+    proof_registry = registry or runtime.build_registry()
+    factory = pipeline_factory or _default_pipeline_factory(runtime, proof_registry)
     web_root = files("facechain").joinpath("web")
 
     app = FastAPI(
@@ -123,6 +129,28 @@ def create_app(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except SearchProviderError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    @app.post("/api/proofs/verify", response_model=VerificationResult)
+    async def verify_existing_proof(bundle: EvidenceBundle) -> VerificationResult:
+        if bundle.receipt.chain_id != proof_registry.web3.eth.chain_id:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Proof targets chain ID {bundle.receipt.chain_id}, but this server is "
+                    f"connected to chain ID {proof_registry.web3.eth.chain_id}."
+                ),
+            )
+        try:
+            return await run_in_threadpool(
+                proof_registry.verify,
+                bundle.evidence,
+                bundle.receipt.transaction_hash,
+            )
+        except TransactionNotFound as exc:
+            raise HTTPException(
+                status_code=404,
+                detail="Transaction was not found on the configured chain.",
+            ) from exc
 
     return app
 

@@ -1,0 +1,98 @@
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.result-actions button {
+  margin-top: 0;
+}
+
+.download {
+  background: var(--acid);
+  color: #10120d;
+  border: 1px solid var(--acid);
+  padding: 12px 16px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.proof-verifier {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 40px;
+  padding: 70px 0;
+  border-top: 1px solid var(--line);
+}
+
+.proof-verifier h2 {
+  margin: 8px 0 14px;
+  font-size: clamp(30px, 4vw, 50px);
+  letter-spacing: -0.05em;
+}
+
+.proof-verifier > div > p {
+  max-width: 570px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.proof-upload {
+  border: 1px solid var(--line);
+  padding: 30px;
+  align-self: start;
+}
+
+.proof-upload input {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font: 600 11px ui-monospace, monospace;
+}
+
+.proof-upload button {
+  margin-top: 15px;
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--acid);
+  color: var(--acid);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.proof-upload button:disabled {
+  border-color: var(--line);
+  color: #737670;
+  cursor: not-allowed;
+}
+
+.proof-status {
+  min-height: 18px;
+  margin: 16px 0 0 !important;
+  font: 700 11px/1.5 ui-monospace, monospace !important;
+  color: var(--muted) !important;
+}
+
+.proof-status.verified {
+  color: var(--acid) !important;
+}
+
+.proof-status.invalid {
+  color: #ff655f !important;
+}
+
+@media (max-width: 820px) {
+  .proof-verifier {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 45px 0;
+  }
+
+  .proof-upload {
+    padding: 22px;
+  }
+}
