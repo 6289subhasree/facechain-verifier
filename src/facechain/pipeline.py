@@ -6,7 +6,7 @@ from typing import Protocol
 import httpx
 
 from facechain.blockchain import EthereumEvidenceRegistry
-from facechain.face import FaceProcessingError, InsightFaceEncoder, is_face_match
+from facechain.face import DEFAULT_MODEL, FaceProcessingError, InsightFaceEncoder, is_face_match
 from facechain.models import (
     CandidateEvaluation,
     EvidenceBundle,
@@ -41,12 +41,14 @@ class FaceChainPipeline:
         cls,
         search_provider: ReverseImageSearch,
         registry: EthereumEvidenceRegistry | None = None,
+        *,
+        model_name: str = DEFAULT_MODEL,
         **kwargs: object,
     ) -> FaceChainPipeline:
         return cls(
             search_provider=search_provider,
             registry=registry or EthereumEvidenceRegistry.local(),
-            encoder=InsightFaceEncoder(),
+            encoder=InsightFaceEncoder(model_name=model_name),
             **kwargs,
         )
 

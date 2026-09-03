@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from importlib.resources import files
 from typing import Annotated
@@ -48,6 +49,7 @@ def _default_pipeline_factory(
         return FaceChainPipeline.with_insightface(
             search_provider=search,
             registry=registry,
+            model_name=settings.face_model_name,
             threshold=settings.face_match_threshold,
             max_results=settings.max_search_results,
             http_client=client,
@@ -93,7 +95,7 @@ def create_app(
                 "provider": provider,
                 "configured": configured,
             },
-            "face_model": "InsightFace buffalo_l (ArcFace)",
+            "face_model": f"InsightFace {runtime.face_model_name} (ArcFace)",
             "chain": {
                 "mode": "public" if public_chain else "local",
                 "name": runtime.evm_chain_name if public_chain else "EthereumTester (local EVM)",
@@ -159,4 +161,9 @@ app = create_app()
 
 
 def main() -> None:
-    uvicorn.run("facechain.api:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(
+        "facechain.api:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "8000")),
+        reload=False,
+    )

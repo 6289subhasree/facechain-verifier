@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: facechain-verifier
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/health
+    envVars:
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: EVM_RPC_URL
+        sync: false
+      - key: EVM_PRIVATE_KEY
+        sync: false
+      - key: EVM_CHAIN_NAME
+        value: Sepolia
+      - key: EVM_EXPLORER_URL
+        value: https://sepolia.etherscan.io/tx
+      - key: FACE_MODEL_NAME
+        value: buffalo_s
+      - key: SEARCH_COUNTRY
+        value: in
+      - key: SEARCH_LANGUAGE
+        value: en
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -34,7 +34,6 @@ Python 3.11 or 3.12 is required.
 ```bash
 git clone https://github.com/6289subhasree/facechain-verifier.git
 cd facechain-verifier
-git switch codex/initial-pipeline
 python -m venv .venv
 ```
 
@@ -61,6 +60,20 @@ Open [http://localhost:8000](http://localhost:8000). Interactive API documentati
 
 > InsightFace downloads `buffalo_l` on the first scan and reuses the local model cache afterward.
 
+## Deploy on Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/6289subhasree/facechain-verifier)
+
+The repository includes a Docker image and Render Blueprint. The deployment uses `buffalo_s`, the smaller InsightFace ArcFace pack, so it can run within Render's free 512 MB instance. Local development keeps the more accurate `buffalo_l` default. Every evidence bundle records the exact model used.
+
+During Blueprint setup, enter these secret environment variables in Render rather than committing them:
+
+- `SERPAPI_API_KEY`: SerpAPI key used for Google Lens discovery.
+- `EVM_RPC_URL`: HTTPS endpoint for Ethereum Sepolia.
+- `EVM_PRIVATE_KEY`: private key for a dedicated, testnet-only funded wallet.
+
+Render automatically supplies `PORT`; FaceChain binds to it. The Blueprint checks `/api/health` and deploys updates only after GitHub checks pass. Free services can sleep after inactivity, so the first request after a pause may take around a minute.
+
 ## Live discovery setup
 
 1. Create a free account at [SerpAPI](https://serpapi.com/).
@@ -77,7 +90,7 @@ Leave `EVM_RPC_URL` and `EVM_PRIVATE_KEY` blank. FaceChain mines the proof on an
 
 ### Persistent public testnet
 
-Configure a testnet such as Sepolia:
+Configure Sepolia:
 
 ```dotenv
 EVM_RPC_URL=https://your-sepolia-rpc.example
