@@ -6,8 +6,17 @@ const dropCopy = selectOne("#drop-copy");
 const replaceButton = selectOne("#replace-button");
 const consent = selectOne("#consent");
 const runButton = selectOne("#run-button");
+const retryButton = selectOne("#retry-button");
 const formError = selectOne("#form-error");
 const idleState = selectOne("#idle-state");
+const processPanel = selectOne("#process-panel");
+const pipelineBadge = selectOne("#pipeline-badge");
+const runMeta = selectOne("#run-meta");
+const runStatus = selectOne("#run-status");
+const elapsedTime = selectOne("#elapsed-time");
+const progressTrack = selectOne("#progress-track");
+const progressFill = selectOne("#progress-fill");
+const progressNote = selectOne("#progress-note");
 const progress = selectOne("#progress");
 const steps = [...document.querySelectorAll("#progress li")];
 const results = selectOne("#results");
@@ -17,7 +26,9 @@ const verifyProofButton = selectOne("#verify-proof-button");
 const proofStatus = selectOne("#proof-status");
 
 let imageFile = null;
-let progressTimer = null;
+let progressTimers = [];
+let elapsedTimer = null;
+let runStartedAt = 0;
 let lastProofBundle = null;
 
 function syncRunButton() {
@@ -65,26 +76,76 @@ replaceButton.addEventListener("click", (event) => {
 });
 dropzone.addEventListener("drop", (event) => selectImage(event.dataTransfer.files[0]));
 
+const progressStages = [
+  { delay: 0, fill: 12, message: "Encoding the submitted face…" },
+  { delay: 3500, fill: 38, message: "Searching public sources for candidates…" },
+  { delay: 9000, fill: 66, message: "Comparing candidate face embeddings…" },
+  { delay: 16000, fill: 88, message: "Preparing and anchoring the evidence fingerprint…" },
+];
+
+function formatElapsed(milliseconds) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function showProgressStage(index) {
+  steps.forEach((step, stepIndex) => {
+    step.classList.toggle("done", stepIndex < index);
+    step.classList.toggle("active", stepIndex === index);
+    step.toggleAttribute("aria-current", stepIndex === index);
+  });
+  runStatus.textContent = progressStages[index].message;
+  progressFill.style.width = `${progressStages[index].fill}%`;
+}
+
+function clearProgressTimers() {
+  progressTimers.forEach((timer) => window.clearTimeout(timer));
+  progressTimers = [];
+  window.clearInterval(elapsedTimer);
+  elapsedTimer = null;
+}
+
 function beginProgress() {
+  clearProgressTimers();
   idleState.hidden = true;
+  runMeta.hidden = false;
+  progressTrack.hidden = false;
   progress.hidden = false;
-  steps.forEach((step) => step.classList.remove("active", "done"));
-  let active = 0;
-  steps[active].classList.add("active");
-  progressTimer = window.setInterval(() => {
-    if (active >= steps.length - 1) return;
-    steps[active].classList.replace("active", "done");
-    active += 1;
-    steps[active].classList.add("active");
-  }, 1700);
+  progressNote.hidden = false;
+  pipelineBadge.textContent = "RUNNING";
+  pipelineBadge.className = "pipeline-badge running";
+  processPanel.setAttribute("aria-busy", "true");
+  progressFill.style.width = "0%";
+  elapsedTime.textContent = "00:00";
+  runStartedAt = Date.now();
+  elapsedTimer = window.setInterval(() => {
+    elapsedTime.textContent = formatElapsed(Date.now() - runStartedAt);
+  }, 1000);
+
+  progressStages.forEach((stage, index) => {
+    progressTimers.push(window.setTimeout(() => showProgressStage(index), stage.delay));
+  });
 }
 
 function finishProgress(ok) {
-  window.clearInterval(progressTimer);
+  clearProgressTimers();
+  processPanel.setAttribute("aria-busy", "false");
   steps.forEach((step) => {
     step.classList.remove("active");
+    step.removeAttribute("aria-current");
     if (ok) step.classList.add("done");
   });
+  if (ok) {
+    progressFill.style.width = "100%";
+    runStatus.textContent = "Verification completed and proof confirmed.";
+    pipelineBadge.textContent = "VERIFIED";
+    pipelineBadge.className = "pipeline-badge verified";
+  } else {
+    progressFill.classList.add("failed");
+    runStatus.textContent = "Verification stopped before completion.";
+    pipelineBadge.textContent = "STOPPED";
+    pipelineBadge.className = "pipeline-badge stopped";
+  }
 }
 
 function put(selector, value) {
@@ -115,12 +176,29 @@ function showResult(data) {
   results.scrollIntoView({ behavior: "smooth" });
 }
 
-runButton.addEventListener("click", async () => {
+function setFormRunning(running) {
+  imageInput.disabled = running;
+  consent.disabled = running;
+  replaceButton.disabled = running;
+  runButton.disabled = running;
+  if (running) retryButton.hidden = true;
+  runButton.querySelector("span").textContent = running
+    ? "Verification running…"
+    : "Run verification";
+}
+
+function friendlyError(error) {
+  if (error instanceof SyntaxError) return "The verifier returned an unreadable response. Please try again.";
+  if (error.message === "Failed to fetch") return "Could not reach the verifier. Check that the server is still running.";
+  return error.message || "Verification failed. Please try again.";
+}
+
+async function runVerification() {
   if (!imageFile || !consent.checked) return;
-  runButton.disabled = true;
-  runButton.querySelector("span").textContent = "Verification running…";
+  setFormRunning(true);
   formError.textContent = "";
   results.hidden = true;
+  progressFill.classList.remove("failed");
   beginProgress();
 
   const body = new FormData();
@@ -128,19 +206,28 @@ runButton.addEventListener("click", async () => {
   body.append("consent", "true");
 
   try {
-    const response = await fetch("/api/verify", { method: "POST", body });
-    const data = await response.json();
+    const response = await fetch("/api/verify", {
+      method: "POST",
+      body,
+    });
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
     if (!response.ok) throw new Error(data.detail || "Verification failed.");
     finishProgress(true);
     showResult(data);
   } catch (error) {
     finishProgress(false);
-    formError.textContent = error.message;
+    formError.textContent = friendlyError(error);
+    retryButton.hidden = false;
+    formError.focus();
   } finally {
-    runButton.querySelector("span").textContent = "Run verification";
+    setFormRunning(false);
     syncRunButton();
   }
-});
+}
+
+runButton.addEventListener("click", runVerification);
+retryButton.addEventListener("click", runVerification);
 
 downloadButton.addEventListener("click", () => {
   if (!lastProofBundle) return;
@@ -167,6 +254,15 @@ selectOne("#reset-button").addEventListener("click", () => {
   dropCopy.hidden = false;
   replaceButton.hidden = true;
   progress.hidden = true;
+  runMeta.hidden = true;
+  progressTrack.hidden = true;
+  progressNote.hidden = true;
+  progressFill.classList.remove("failed");
+  progressFill.style.width = "0%";
+  pipelineBadge.textContent = "READY";
+  pipelineBadge.className = "pipeline-badge";
+  retryButton.hidden = true;
+  formError.textContent = "";
   idleState.hidden = false;
   syncRunButton();
   dropzone.scrollIntoView({ behavior: "smooth", block: "center" });
