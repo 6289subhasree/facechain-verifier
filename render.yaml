@@ -20,6 +20,8 @@ services:
         value: https://sepolia.etherscan.io/tx
       - key: FACE_MODEL_NAME
         value: buffalo_s
+      - key: FACE_DETECTION_SIZE
+        value: "320"
       - key: SEARCH_COUNTRY
         value: in
       - key: SEARCH_LANGUAGE
