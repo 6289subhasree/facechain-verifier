@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     serpapi_api_key: SecretStr | None = None
     google_vision_api_key: SecretStr | None = None
     face_model_name: str = Field(default="buffalo_l", pattern=r"^buffalo_[lsm]$")
+    face_detection_size: int = Field(default=640, ge=160, le=1024, multiple_of=32)
     face_match_threshold: float = Field(default=0.45, ge=-1, le=1)
     max_search_results: int = Field(default=10, ge=1, le=50)
     http_timeout_seconds: float = Field(default=15, gt=0, le=60)
