@@ -43,12 +43,16 @@ class FaceChainPipeline:
         registry: EthereumEvidenceRegistry | None = None,
         *,
         model_name: str = DEFAULT_MODEL,
+        detection_size: int = 640,
         **kwargs: object,
     ) -> FaceChainPipeline:
         return cls(
             search_provider=search_provider,
             registry=registry or EthereumEvidenceRegistry.local(),
-            encoder=InsightFaceEncoder(model_name=model_name),
+            encoder=InsightFaceEncoder(
+                model_name=model_name,
+                detection_size=(detection_size, detection_size),
+            ),
             **kwargs,
         )
 
