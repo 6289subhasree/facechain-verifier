@@ -81,7 +81,10 @@ def client() -> TestClient:
 
 def test_index_and_health_are_available() -> None:
     test_client = client()
-    assert test_client.get("/").status_code == 200
+    index = test_client.get("/")
+    assert index.status_code == 200
+    assert "/static/progress.css" in index.text
+    assert test_client.get("/static/progress.css").status_code == 200
     health = test_client.get("/api/health").json()
     assert health["chain"]["mode"] == "local"
 

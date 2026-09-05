@@ -1,0 +1,131 @@
+/* Verification run feedback and recovery controls. */
+.retry {
+  width: 100%;
+  height: 44px;
+  margin-top: 10px;
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.retry:hover {
+  border-color: var(--acid);
+  color: var(--acid);
+}
+
+.error:focus {
+  outline: 0;
+}
+
+.process-heading,
+.run-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.process-heading {
+  align-items: center;
+}
+
+.pipeline-badge {
+  border: 1px solid var(--line);
+  padding: 6px 9px;
+  color: var(--muted);
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: .12em;
+}
+
+.pipeline-badge.running,
+.pipeline-badge.verified {
+  color: var(--acid);
+  border-color: #c9ff386b;
+}
+
+.pipeline-badge.running::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--acid);
+  box-shadow: 0 0 10px var(--acid);
+  animation: pulse 1s infinite;
+}
+
+.pipeline-badge.stopped {
+  color: #ff8f78;
+  border-color: #ff8f7866;
+}
+
+.run-meta {
+  align-items: start;
+  margin-top: 28px;
+  color: var(--paper);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.run-meta time {
+  flex: none;
+  color: var(--acid);
+  font: 700 11px ui-monospace, monospace;
+}
+
+.progress-track {
+  height: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.progress-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--acid);
+  box-shadow: 0 0 10px var(--acid);
+  transition: width .5s ease;
+}
+
+.progress-track i.failed {
+  background: #ff8f78;
+  box-shadow: none;
+}
+
+.progress-note {
+  margin: 0;
+  color: #777b74;
+  font: 600 9px/1.5 ui-monospace, monospace;
+  letter-spacing: .04em;
+}
+
+.progress {
+  padding-top: 35px;
+}
+
+.progress li {
+  padding-bottom: 39px;
+}
+
+.progress li:not(:last-child)::after {
+  height: 31px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .pipeline-badge.running::before,
+  .progress li.active > i {
+    animation: none;
+  }
+
+  .progress-track i {
+    transition: none;
+  }
+}

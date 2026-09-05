@@ -6,6 +6,7 @@
   <title>FaceChain — Traceable identity proof</title>
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/proof.css">
+  <link rel="stylesheet" href="/static/progress.css">
   <script src="/static/app.js" defer></script>
 </head>
 <body>
@@ -32,17 +33,21 @@
         </label>
         <label class="consent"><input id="consent" type="checkbox"><i></i><span>I confirm I have permission to process this image and search public sources.</span></label>
         <button id="run-button" class="run" type="button" disabled><span>Run verification</span><b>↗</b></button>
-        <p id="form-error" class="error" role="alert"></p>
+        <button id="retry-button" class="retry" type="button" hidden>Try verification again</button>
+        <p id="form-error" class="error" role="alert" tabindex="-1"></p>
       </div>
-      <aside class="panel process-panel">
-        <span class="kicker">LIVE PIPELINE</span>
+      <aside id="process-panel" class="panel process-panel" aria-busy="false">
+        <div class="process-heading"><span class="kicker">LIVE PIPELINE</span><span id="pipeline-badge" class="pipeline-badge">READY</span></div>
         <div id="idle-state" class="idle"><div class="radar"><i></i><i></i><i></i></div><h3>Awaiting scan</h3><p>The evidence chain will appear here as each stage completes.</p></div>
-        <ol id="progress" class="progress" hidden>
+        <div id="run-meta" class="run-meta" hidden><span id="run-status" role="status" aria-live="polite">Preparing verification…</span><time id="elapsed-time">00:00</time></div>
+        <div id="progress-track" class="progress-track" hidden aria-hidden="true"><i id="progress-fill"></i></div>
+        <ol id="progress" class="progress" hidden aria-label="Verification progress">
           <li><b>01</b><div><strong>Encoding face</strong><span>Detecting landmarks and biometric vector</span></div><i></i></li>
           <li><b>02</b><div><strong>Searching the public web</strong><span>Finding pages with matching imagery</span></div><i></i></li>
           <li><b>03</b><div><strong>Comparing candidates</strong><span>Re-verifying every discovered face</span></div><i></i></li>
           <li><b>04</b><div><strong>Anchoring evidence</strong><span>Writing the canonical SHA-256 fingerprint</span></div><i></i></li>
         </ol>
+        <p id="progress-note" class="progress-note" hidden>Stage timing is estimated while the secure server completes the full pipeline.</p>
       </aside>
     </section>
     <section id="results" class="results shell" hidden aria-live="polite">
