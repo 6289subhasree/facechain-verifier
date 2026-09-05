@@ -29,7 +29,7 @@ COPY --from=builder /wheels /wheels
 
 RUN python -m pip install --no-cache-dir /wheels/* \
     && rm -rf /wheels \
-    && python -c "from insightface.app import FaceAnalysis; FaceAnalysis(name='buffalo_s', providers=['CPUExecutionProvider'])"
+    && python -c "from insightface.app import FaceAnalysis; FaceAnalysis(name='buffalo_s', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])"
 
 EXPOSE 8000
 

@@ -1,4 +1,5 @@
-from types import SimpleNamespace
+import sys
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -62,3 +63,32 @@ def test_encoder_reports_missing_face() -> None:
 
     with pytest.raises(FaceNotFoundError, match="no face"):
         InsightFaceEncoder(app=fake_app).encode(image_bytes)
+
+
+def test_encoder_loads_only_required_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    constructor_options: dict[str, object] = {}
+    prepared_options: dict[str, object] = {}
+
+    class FakeFaceAnalysis:
+        def __init__(self, **kwargs: object) -> None:
+            constructor_options.update(kwargs)
+
+        def prepare(self, **kwargs: object) -> None:
+            prepared_options.update(kwargs)
+
+    insightface = ModuleType("insightface")
+    insightface_app = ModuleType("insightface.app")
+    insightface_app.FaceAnalysis = FakeFaceAnalysis  # type: ignore[attr-defined]
+    insightface.app = insightface_app  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "insightface", insightface)
+    monkeypatch.setitem(sys.modules, "insightface.app", insightface_app)
+
+    encoder = InsightFaceEncoder(model_name="buffalo_s", detection_size=(320, 320))
+    encoder._load_app()
+
+    assert constructor_options == {
+        "name": "buffalo_s",
+        "allowed_modules": ["detection", "recognition"],
+        "providers": ["CPUExecutionProvider"],
+    }
+    assert prepared_options == {"ctx_id": -1, "det_size": (320, 320)}

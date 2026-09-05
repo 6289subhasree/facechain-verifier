@@ -7,6 +7,7 @@ from typing import Any
 from facechain.models import FaceScan
 
 DEFAULT_MODEL = "buffalo_l"
+REQUIRED_MODULES = ("detection", "recognition")
 
 
 class FaceProcessingError(RuntimeError):
@@ -70,7 +71,14 @@ class InsightFaceEncoder:
             raise FaceProcessingError(
                 "InsightFace is not installed; run `pip install -e '.[face]'`"
             ) from exc
-        self._app = FaceAnalysis(name=self.model_name, providers=["CPUExecutionProvider"])
+        # FaceChain only consumes bounding boxes and ArcFace embeddings. Loading
+        # the landmark and attribute models included in a buffalo pack wastes a
+        # significant amount of RAM on small production instances.
+        self._app = FaceAnalysis(
+            name=self.model_name,
+            allowed_modules=list(REQUIRED_MODULES),
+            providers=["CPUExecutionProvider"],
+        )
         self._app.prepare(ctx_id=-1, det_size=self.detection_size)
         return self._app
 

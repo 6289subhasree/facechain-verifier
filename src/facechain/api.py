@@ -50,6 +50,7 @@ def _default_pipeline_factory(
             search_provider=search,
             registry=registry,
             model_name=settings.face_model_name,
+            detection_size=settings.face_detection_size,
             threshold=settings.face_match_threshold,
             max_results=settings.max_search_results,
             http_client=client,
@@ -96,6 +97,7 @@ def create_app(
                 "configured": configured,
             },
             "face_model": f"InsightFace {runtime.face_model_name} (ArcFace)",
+            "face_detection_size": runtime.face_detection_size,
             "chain": {
                 "mode": "public" if public_chain else "local",
                 "name": runtime.evm_chain_name if public_chain else "EthereumTester (local EVM)",
