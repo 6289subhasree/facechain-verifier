@@ -21,6 +21,8 @@ def test_face_model_must_be_a_supported_insightface_pack() -> None:
     with pytest.raises(ValidationError):
         Settings(face_model_name="unknown", _env_file=None)
 
+    assert Settings(face_model_name="buffalo_sc", _env_file=None).face_model_name == "buffalo_sc"
+
 
 def test_face_detection_size_must_be_a_supported_multiple() -> None:
     with pytest.raises(ValidationError):
