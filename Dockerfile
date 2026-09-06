@@ -17,7 +17,7 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    FACE_MODEL_NAME=buffalo_s
+    FACE_MODEL_NAME=buffalo_sc
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY --from=builder /wheels /wheels
 
 RUN python -m pip install --no-cache-dir /wheels/* \
     && rm -rf /wheels \
-    && python -c "from insightface.app import FaceAnalysis; FaceAnalysis(name='buffalo_s', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])"
+    && python -c "from insightface.app import FaceAnalysis; FaceAnalysis(name='buffalo_sc', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])"
 
 EXPOSE 8000
 
