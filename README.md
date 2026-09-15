@@ -16,6 +16,20 @@ Reverse-image search is used only for discovery—not as proof. A candidate beco
 >
 > **API documentation:** [facechain-verifier.onrender.com/docs](https://facechain-verifier.onrender.com/docs)
 
+## Reviewer walkthrough
+
+**Focus:** integrating image discovery, independent candidate comparison and portable evidence verification.
+
+1. Open the live prototype or run the application locally with the configuration below.
+2. Use an image you have permission to process and confirm consent.
+3. Inspect the candidate source, similarity score, threshold and chain receipt.
+4. Download the proof JSON and verify it through **Check an existing proof**.
+5. Make a copy, change an evidence field such as the title, and verify the modified copy to demonstrate tamper rejection.
+
+**Read the implementation:** [pipeline](src/facechain/pipeline.py), [evidence serialization](src/facechain/evidence.py), [chain verification](src/facechain/blockchain.py), and [pipeline tests](tests/test_pipeline.py).
+
+**Evidence boundary:** cosine similarity is not identity accuracy or a calibrated probability. The chain verifies the integrity of recorded evidence, not the truth of an identity claim. This is a computer-vision pipeline, not an LLM agent.
+
 ## Table of contents
 
 - [What it does](#what-it-does)
